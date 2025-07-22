@@ -2,67 +2,71 @@ name: Nuitka Cross-Platform Build
 
 on:
   push:
-    # tags:
-    #   - "v*"
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: aliyun-cert-linux
-          - os: windows-latest
-            artifact_name: aliyun-cert-win.exe
-          - os: macos-latest
-            artifact_name: aliyun-cert-mac
-
+  build-linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
+          python-version: "3.11"
+      - run: |
           pip install -r requirements.txt
           pip install nuitka
-
-      - name: Compile with Nuitka
-        run: |
+      - run: |
           mkdir -p dist
-          python -m nuitka main.py \
-            --standalone \
-            --onefile \
-            --output-dir=dist \
-            --output-filename=${{ matrix.artifact_name }} \
-            --enable-plugin=numpy \
-            --follow-imports \
-            --remove-output
-
-      - name: Strip binary (Linux/macOS only)
-        if: runner.os != 'Windows'
-        run: |
-          strip dist/${{ matrix.artifact_name }} || true
-
-      - name: UPX compress (if available)
-        if: runner.os != 'Windows'
-        run: |
+          python -m nuitka main.py --standalone --onefile --output-dir=dist --output-filename=aliyun-cert-linux --follow-imports --remove-output
+          strip dist/aliyun-cert-linux || true
           sudo apt-get update && sudo apt-get install -y upx || true
-          upx dist/${{ matrix.artifact_name }} || true
-
-      - name: Set execute permission
-        if: runner.os != 'Windows'
-        run: chmod +x dist/${{ matrix.artifact_name }}
-
-      - name: Upload to GitHub Artifacts
-        uses: actions/upload-artifact@v4
+          upx dist/aliyun-cert-linux || true
+          chmod +x dist/aliyun-cert-linux
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/${{ matrix.artifact_name }}
+          name: aliyun-cert-linux
+          path: dist/aliyun-cert-linux
+
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install -r requirements.txt
+          pip install nuitka
+      - run: |
+          mkdir dist
+          python -m nuitka main.py --standalone --onefile --output-dir=dist --output-filename=aliyun-cert-win.exe --follow-imports --remove-output
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aliyun-cert-win.exe
+          path: dist/aliyun-cert-win.exe
+
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install -r requirements.txt
+          pip install nuitka
+      - run: |
+          mkdir -p dist
+          python -m nuitka main.py --standalone --onefile --output-dir=dist --output-filename=aliyun-cert-mac --follow-imports --remove-output
+          strip dist/aliyun-cert-mac || true
+          which upx && upx dist/aliyun-cert-mac || true
+          chmod +x dist/aliyun-cert-mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aliyun-cert-mac
+          path: dist/aliyun-cert-mac
