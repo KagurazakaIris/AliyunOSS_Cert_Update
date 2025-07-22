@@ -19,7 +19,7 @@ jobs:
       - run: |
           mkdir -p dist
           pip install nuitka
-          apt-get install -y patchelf
+          sudo apt-get install -y patchelf
           nuitka main.py \
             --standalone \
             --onefile \
