@@ -18,7 +18,16 @@ jobs:
           pip install nuitka
       - run: |
           mkdir -p dist
-          python -m nuitka main.py --standalone --onefile --output-dir=dist --output-filename=aliyun-cert-linux --follow-imports --remove-output
+          python3 -m nuitka main.py \
+            --standalone \
+            --onefile \
+            --enable-plugin=pylint-warnings,anti-bloat \
+            --follow-imports \
+            --include-package-data=oss2 \
+            --include-package=oss2 \
+            --output-dir=dist \
+            --output-filename=aliyun-cert-linux \
+            --remove-output
           strip dist/aliyun-cert-linux || true
           sudo apt-get update && sudo apt-get install -y upx || true
           upx dist/aliyun-cert-linux || true
