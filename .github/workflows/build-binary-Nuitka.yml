@@ -18,10 +18,12 @@ jobs:
           pip install nuitka
       - run: |
           mkdir -p dist
-          python3 -m nuitka main.py \
+          pip install nuitka
+          apt-get install -y patchelf
+          nuitka main.py \
             --standalone \
             --onefile \
-            --enable-plugin=pylint-warnings,anti-bloat \
+            --enable-plugin=pylint-warnings \
             --follow-imports \
             --include-package-data=oss2 \
             --include-package=oss2 \
@@ -30,7 +32,6 @@ jobs:
             --remove-output
           strip dist/aliyun-cert-linux || true
           sudo apt-get update && sudo apt-get install -y upx || true
-          upx dist/aliyun-cert-linux || true
           chmod +x dist/aliyun-cert-linux
       - uses: actions/upload-artifact@v4
         with:
@@ -73,7 +74,6 @@ jobs:
           mkdir -p dist
           python -m nuitka main.py --standalone --onefile --output-dir=dist --output-filename=aliyun-cert-mac --follow-imports --remove-output
           strip dist/aliyun-cert-mac || true
-          which upx && upx dist/aliyun-cert-mac || true
           chmod +x dist/aliyun-cert-mac
       - uses: actions/upload-artifact@v4
         with:
