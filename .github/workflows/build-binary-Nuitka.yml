@@ -1,0 +1,68 @@
+name: Nuitka Cross-Platform Build
+
+on:
+  push:
+    # tags:
+    #   - "v*"
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: aliyun-cert-linux
+          - os: windows-latest
+            artifact_name: aliyun-cert-win.exe
+          - os: macos-latest
+            artifact_name: aliyun-cert-mac
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install nuitka
+
+      - name: Compile with Nuitka
+        run: |
+          mkdir -p dist
+          python -m nuitka main.py \
+            --standalone \
+            --onefile \
+            --output-dir=dist \
+            --output-filename=${{ matrix.artifact_name }} \
+            --enable-plugin=numpy \
+            --follow-imports \
+            --remove-output
+
+      - name: Strip binary (Linux/macOS only)
+        if: runner.os != 'Windows'
+        run: |
+          strip dist/${{ matrix.artifact_name }} || true
+
+      - name: UPX compress (if available)
+        if: runner.os != 'Windows'
+        run: |
+          sudo apt-get update && sudo apt-get install -y upx || true
+          upx dist/${{ matrix.artifact_name }} || true
+
+      - name: Set execute permission
+        if: runner.os != 'Windows'
+        run: chmod +x dist/${{ matrix.artifact_name }}
+
+      - name: Upload to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
